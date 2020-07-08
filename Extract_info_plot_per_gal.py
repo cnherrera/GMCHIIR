@@ -113,9 +113,11 @@ hiicats = [f for f in os.listdir(dirhii)]
 # homogenized: Catalogs-CPROPS/homogenized
 # matched: Catalogs-CPROPS/matched
 
-typegmc = "homogenized"  # native
+typegmc = "ST1p5/homogenized"  # native
 dirgmc = dirgmc+typegmc+"/"
-namegmc = "_12m+7m+tp_co21_150pc_props"  # "_12m+7m+tp_co21_native_props"
+with open("name_gmc.txt","r") as myfile:
+   namegmc = myfile.read().replace('\n', '')  #"_12m+7m+tp_co21_120pc_props"  # "_12m+7m+tp_co21_native_props"
+
 #-----------------------------------------
 
 pdf1 = fpdf.PdfPages("Histograms_all_GMC%s.pdf" % namegmc)
@@ -168,12 +170,13 @@ for i in range(len(hiicats)):
     pind = thii['PHANGS_INDEX']
 
     #lhahiicorr = thii['LHA']*10.**(0.4*np.interp(6563, [5530,6700],[1.,0.74])*3.1*thii['EBV']) # Correcting
-    lhahiicorr = thii['CLHA']  # erg/s
+    #lhahiicorr = thii['CLHA']  # erg/s
     #elhahiicorr = thii['CLHA_ERR'] # Error in Lhalpha extinction corrected
     sizehii  = thii['SIZE'] #pc
     sigmahii = thii['HA_SIG']
     metalhii = thii['METAL_SCAL']
     vamethii = thii['OFF_SCAL']
+    disthii =thii['DISTMPC'][0]
 
     #=============================================================
     # Corresponding CO data and GMC catalog
@@ -182,6 +185,8 @@ for i in range(len(hiicats)):
     #tgmc = Table.read(("%s%s_co21_v1p0_props.fits" % (dirgmc,galnam)))
     print "Reading table"
     tgmc = Table.read(("%s%s%s.fits" % (dirgmc,galnam,namegmc)))
+
+    dist_gal_Mpc = tgmc['DISTANCE_PC']/1e6
 
     s2n = tgmc['S2N']
     ids2n = (np.where(s2n > 6)[0]).tolist()
@@ -193,15 +198,28 @@ for i in range(len(hiicats)):
     radgmc = tgmc['RAD_PC'][ids2n]
     radnogmc=tgmc['RAD_NODC_NOEX'][ids2n]
     tpgmc  = tgmc['TMAX_K'][ids2n]
-    massco = tgmc['FLUX_KKMS_PC2'][ids2n]*4.3/0.69
-    avir   = 5.*( sigvgmc*1e5 )**2 * radgmc * ct.pc.cgs.value /massco/ct.M_sun.cgs.value/ct.G.cgs.value
+    if (galnam != 'ngc1672' and galnam != 'ic5332'):
+       massco = tgmc['MLUM_MSUN'][ids2n] 
+       avir   = tgmc['VIRPARAM'][ids2n]
+       tauff  = tgmc['TFF_MYR'][ids2n]*10**6
+       Sigmamol_co=tgmc['SURFDENS'][ids2n]
+    else:
+       massco = tgmc['FLUX_KKMS_PC2'][ids2n]*4.3/0.69
+       avir  = 5.*( sigvgmc*1e5 )**2 * radgmc * ct.pc.cgs.value /massco/ct.M_sun.cgs.value/ct.G.cgs.value
+       Sigmamol_co  = massco/( radgmc**2 * math.pi )
+       RAD3 = (radgmc**2*50)**(0.33)
+       rhogmc = 1.26 * massco / (4/3 * math.pi * RAD3**3) * ct.M_sun.cgs.value/ct.pc.cgs.value**3
+       arg = 3. * math.pi / (32 * ct.G.cgs.value * rhogmc)
+       tauff = [math.sqrt(f)/365/24/3600 for f in arg]
+       tauff = np.array(tauff)
+    
     Sigmamol_vir = tgmc['MVIR_MSUN'][ids2n] / ( radgmc**2 * math.pi )
-    Sigmamol_co  = massco/( radgmc**2 * math.pi )
-    rhogmc = 1.26 * massco / (4/3 * math.pi * radgmc**3) * ct.M_sun.cgs.value/ct.pc.cgs.value**3
-    arg = 3. * math.pi / (32 * ct.G.cgs.value * rhogmc)
-    tauff = [math.sqrt(f)/365/24/3600 for f in arg]
-    tauff = np.array(tauff)
 
+
+    #=========================================================================================
+    #Correct LHa by the new distance measurement.
+    
+    lhahiicorr = thii['CLHA']*(dist_gal_Mpc/disthii)**2  # erg/s
     #==========================================================================================
     # Write to DS9 readable table
     wds9 = writeds9(galnam,namegmc,rahii,dechii,pind,ragmc,decgmc,"all_regions")
@@ -222,7 +240,7 @@ for i in range(len(hiicats)):
     xgalhii   = xplane
     ygalhii   = yplane / np.cos(inclgal)
     rgalhii   = (xgalhii**2 + ygalhii**2)**0.5   #arcsec
-    rgalhii   = np.radians(rgalhii/3600)*thii['DISTMPC'][0]*1e3 # kpc
+    rgalhii   = np.radians(rgalhii/3600)*dist_gal_Mpc*1e3 # kpc
     psigalhii = np.arctan2(ygalhii, xgalhii)
 
     # GMC
@@ -245,14 +263,14 @@ for i in range(len(hiicats)):
     # inddist: index for that minimu distance
     # idovergmc: index for the gmcs
     # idoverhii: index for the hii regions
-    mindist,inddist,idovergmc,idoverhii=checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,thii['DISTMPC'][0])
+    mindist,inddist,idovergmc,idoverhii=checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,dist_gal_Mpc)
 
     # For each HII region, I get the number and index of GMCs that are at a distance < 2*size
     #and save variables with all data becaus of the index.
     numgmcs = [np.zeros(len(xgalhii)),[None]*len(xgalhii)]
     for j in range(len(xgalhii)):
         dstas = ((xgalgmc-xgalhii[j])**2 + (ygalgmc-ygalhii[j])**2)**0.5
-        dst = np.radians(dstas/3600)*thii['DISTMPC'][0]*1e6  #dist in pc
+        dst = np.radians(dstas/3600)*dist_gal_Mpc*1e6  #dist in pc
         mylim = [dst < sizehii[j]*2]
         numgmcs[1][j] = np.where(mylim[0]==True)[0]
         numgmcs[0][j] = len(np.where(mylim[0]==True)[0])
@@ -472,8 +490,8 @@ for j in range(len(galaxias)):
 print "Plots of all galaxies together"
 arrayxax = [GaldisHIIover,SizepcHIIover,LumHacorrover,sigmavHIIover,ratlin,metaliHIIover,varmetHIIover]
 arrayyay = [DisHIIGMCover,MasscoGMCover,SizepcGMCover,Sigmamoleover,sigmavGMCover,aviriaGMCover,TpeakGMCover,tauffGMCover]
-labsxax = ['log(Galactocentric radius) [kpc]','log(HII region size) [pc]', r'log(Luminosity H$\alpha$) [erg/s]',r'log($\sigma_{\rm v}$ HII region) [km/s]',r'log(Lum H$\alpha$/HII region size$^2$)','Metallicity','Metallicity variation']
-labsyay = ['log(Dist. HII-GMC) [pc]',r'log(M$_{\rm CO}$) [10^5 M$_{\odot}$]','log(GMC size) [pc]',r'log($\Sigma_{\rm mol}$)',r'log($\sigma_{\rm v}$) [km/s]',r'log($\alpha_{vir}$)',r'log(CO $T_{\rm peak}$ [K])',r'log($\tau_{\rm ff}$) [yr]']
+labsxax = ['log(Galactocentric radius) [kpc]','log(HII region size) [pc]', r'log(Luminosity H$\alpha$) [erg s$^{-1}$]',r'log($\sigma_{\rm v}$ HII region) [km s$^{-1}$]',r'log(Lum H$\alpha$/HII region size$^2$)','Metallicity','Metallicity variation']
+labsyay = ['log(Dist. HII-GMC) [pc]',r'log(M$_{\rm CO}$) [10$^5$ M$_{\odot}$]','log(GMC size) [pc]',r'log($\Sigma_{\rm mol}$)',r'log($\sigma_{\rm v}$) [km s$^{-1}$]',r'log($\alpha_{vir}$)',r'log(CO $T_{\rm peak}$ [K])',r'log($\tau_{\rm ff}$) [yr]']
 
 print "Saving variables in external file."
 with open(('Galaxies_variables_GMC%s.pickle' % namegmc), "wb") as f:
