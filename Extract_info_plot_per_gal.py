@@ -186,7 +186,7 @@ for i in range(len(hiicats)):
     print "Reading table"
     tgmc = Table.read(("%s%s%s.fits" % (dirgmc,galnam,namegmc)))
 
-    dist_gal_Mpc = tgmc['DISTANCE_PC']/1e6
+    dist_gal_Mpc = tgmc['DISTANCE_PC'][0]/1e6
 
     s2n = tgmc['S2N']
     ids2n = (np.where(s2n > 6)[0]).tolist()
