@@ -28,7 +28,7 @@ sns.set(style="white", color_codes=True)
 #===================================================================================
 from typing import List
 
-
+# To measure the distance between the GMCs and HII regions.
 def checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,distance):
     dists  = np.zeros((2,len(xgalgmc)))
     for j in range(len(xgalgmc)):
@@ -61,15 +61,22 @@ def checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,distance):
             idgmc.append(idint)
 
     #@ Index  idhii idgmc
-    addsize = sizehii[idhii] + radgmc[idgmc]
+    addsize = (sizehii[idhii] + radgmc[idgmc])#*4#/3.
     #tmpoverid = np.argwhere(dists[1,idgmc] < (sizehii[idhii]*2)) # HII with GMCs < 2 sizeHII type: List[int]
     tmpoverid = np.argwhere(mindist[idgmc] < addsize)
     overid = [int(item) for item in tmpoverid]
     idovergmc = [idgmc[item] for item in overid]
     idoverhii = [idhii[item] for item in overid]
-    return mindist,inddist,idovergmc,idoverhii
+    allgmc = np.arange(len(radgmc))
+    allhii = np.arange(len(sizehii))
+    idgmcalone = np.delete(allgmc,idovergmc).tolist()
+    idhiialone = np.delete(allhii,idoverhii).tolist()
+    print len(idovergmc),len(idgmcalone),len(radgmc)
+    print len(idoverhii),len(idhiialone),len(sizehii)
+    return mindist,inddist,idovergmc,idoverhii,idgmcalone,idhiialone
     
 
+# Write a list of sources into DS9 format
 def writeds9(galnam,namegmc,rahii,dechii,pind,ragmc,decgmc,comment):
     
     f=open('../ds9tables/%s%s-HIIregions-%s.reg' % (galnam,namegmc,comment) ,"w+")
@@ -113,7 +120,7 @@ hiicats = [f for f in os.listdir(dirhii)]
 # homogenized: Catalogs-CPROPS/homogenized
 # matched: Catalogs-CPROPS/matched
 
-typegmc = "ST1p5/homogenized"  # native
+typegmc = "ST1p5/homogenized"  # ST1p5/native
 dirgmc = dirgmc+typegmc+"/"
 with open("name_gmc.txt","r") as myfile:
    namegmc = myfile.read().replace('\n', '')  #"_12m+7m+tp_co21_120pc_props"  # "_12m+7m+tp_co21_native_props"
@@ -135,6 +142,11 @@ TpeakGMC =[] ; tauffGMC =[] ; numGMConHII = []
 LumHacorrover=[] ; GaldisHIIover=[] ; SizepcHIIover=[] ; sigmavHIIover=[] ; metaliHIIover=[] ; varmetHIIover=[]
 DisHIIGMCover=[] ; SizepcGMCover=[] ; sigmavGMCover=[] ; MasscoGMCover=[] ; aviriaGMCover=[] ; Sigmamoleover=[]
 TpeakGMCover=[]  ; tauffGMCover = []
+
+LumHacorrno=[] ; GaldisHIIno=[] ; SizepcHIIno=[] ; sigmavHIIno=[] 
+SizepcGMCno=[] ; sigmavGMCno=[] ; MasscoGMCno=[] ; aviriaGMCno=[] ; Sigmamoleno=[]
+TpeakGMCno =[] ; tauffGMCno =[]
+
 
 RAgmcover = [] ; DECgmcover = []  
 RAhiiover = [] ; DEChiiover = []
@@ -165,18 +177,21 @@ for i in range(len(hiicats)):
     inclgal = thii['INCL'][0] #incl inclination of galaxy in degrees
     racen   =  thii['RA_CENTER'][0] ; deccen  =  thii['DEC_CENTER'][0]
 
+    # Check HII regions with bptflag 0, i.e. OK
+    flg = thii['BPTFLAG']
+    idfl = (np.where(flg == 0)[0]).tolist()
+    
     #Information of individual HII regions
-    rahii  = thii['RA'] ; dechii = thii['DEC']
-    pind = thii['PHANGS_INDEX']
+    rahii  = thii['RA'][idfl] ; dechii = thii['DEC'][idfl]
+    pind = thii['PHANGS_INDEX'][idfl]
 
     #lhahiicorr = thii['LHA']*10.**(0.4*np.interp(6563, [5530,6700],[1.,0.74])*3.1*thii['EBV']) # Correcting
     #lhahiicorr = thii['CLHA']  # erg/s
     #elhahiicorr = thii['CLHA_ERR'] # Error in Lhalpha extinction corrected
-    sizehii  = thii['SIZE'] #pc
-    sigmahii = thii['HA_SIG']
-    metalhii = thii['METAL_SCAL']
-    vamethii = thii['OFF_SCAL']
-    disthii =thii['DISTMPC'][0]
+    sigmahii = thii['HA_SIG'][idfl] 
+    metalhii = thii['METAL_SCAL'][idfl] 
+    vamethii = thii['OFF_SCAL'][idfl] 
+    disthii  = thii['DISTMPC'][0]
 
     #=============================================================
     # Corresponding CO data and GMC catalog
@@ -187,9 +202,11 @@ for i in range(len(hiicats)):
     tgmc = Table.read(("%s%s%s.fits" % (dirgmc,galnam,namegmc)))
 
     dist_gal_Mpc = tgmc['DISTANCE_PC'][0]/1e6
-
+    print dist_gal_Mpc
+    print tgmc['BEAMFWHM_PC'][0]
+    
     s2n = tgmc['S2N']
-    ids2n = (np.where(s2n > 6)[0]).tolist()
+    ids2n = (np.where(s2n > 0)[0]).tolist()
 
     sigvgmc= tgmc['SIGV_KMS'][ids2n]
     ragmc  = tgmc['XCTR_DEG'][ids2n]
@@ -214,12 +231,14 @@ for i in range(len(hiicats)):
        tauff = np.array(tauff)
     
     Sigmamol_vir = tgmc['MVIR_MSUN'][ids2n] / ( radgmc**2 * math.pi )
-
+        
 
     #=========================================================================================
-    #Correct LHa by the new distance measurement.
+    #Correct LHa and size HII by the new distance measurement.
     
-    lhahiicorr = thii['CLHA']*(dist_gal_Mpc/disthii)**2  # erg/s
+    lhahiicorr = thii['CLHA'][idfl]*(dist_gal_Mpc/disthii)**2  # erg/s
+    sizehii  = thii['SIZE'][idfl]*(dist_gal_Mpc/disthii) #pc
+    
     #==========================================================================================
     # Write to DS9 readable table
     wds9 = writeds9(galnam,namegmc,rahii,dechii,pind,ragmc,decgmc,"all_regions")
@@ -238,7 +257,7 @@ for i in range(len(hiicats)):
     xplane = Rplane * np.cos(galPA)
     yplane = Rplane * np.sin(galPA)
     xgalhii   = xplane
-    ygalhii   = yplane / np.cos(inclgal)
+    ygalhii   = yplane / np.cos(inclgal)   ###  To be changed if we don't want to deproject.
     rgalhii   = (xgalhii**2 + ygalhii**2)**0.5   #arcsec
     rgalhii   = np.radians(rgalhii/3600)*dist_gal_Mpc*1e3 # kpc
     psigalhii = np.arctan2(ygalhii, xgalhii)
@@ -253,9 +272,28 @@ for i in range(len(hiicats)):
     xplane = Rplane * np.cos(galPA)
     yplane = Rplane * np.sin(galPA)
     xgalgmc   = xplane
-    ygalgmc   = yplane / np.cos(inclgal)
+    ygalgmc   = yplane / np.cos(inclgal) ###  To be changed if we don't want to deproject.
     rgalgmc   = (xgalgmc**2 + ygalgmc**2)**0.5   #arcsec
     psigalgmc = np.arctan2(ygalgmc, xgalgmc)
+
+    if galnam == 'ngc1672':
+        discen = rgalgmc
+        print dist_gal_Mpc
+        print discen[0], discen[20]
+        limd = 15 #0.5/dist_gal_Mpc*180/math.pi*3600
+        sigvgmc=sigvgmc[discen >limd]
+        ragmc  = ragmc[discen >limd]
+        decgmc = decgmc[discen >limd]
+        fluxco = fluxco[discen >limd]
+        radgmc = radgmc[discen >limd]
+        radnogmc= radnogmc[discen >limd]
+        tpgmc  = tpgmc[discen >limd]
+        massco = massco[discen >limd]
+        avir        = avir[discen >limd]
+        Sigmamol_co = Sigmamol_co[discen >limd]
+        tauff       = tauff[discen >limd]
+        xgalgmc = xgalgmc[discen>limd]
+        ygalgmc = ygalgmc[discen>limd]
 
     #==========================================================================================
     #  Distance between HII and GMCs ;  in arcsec
@@ -263,7 +301,7 @@ for i in range(len(hiicats)):
     # inddist: index for that minimu distance
     # idovergmc: index for the gmcs
     # idoverhii: index for the hii regions
-    mindist,inddist,idovergmc,idoverhii=checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,dist_gal_Mpc)
+    mindist,inddist,idovergmc,idoverhii,idgmcno,idhiino=checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,dist_gal_Mpc)
 
     # For each HII region, I get the number and index of GMCs that are at a distance < 2*size
     #and save variables with all data becaus of the index.
@@ -313,6 +351,11 @@ for i in range(len(hiicats)):
     DisHIIGMCover.append(DisHIIGMC_galo) ; SizepcGMCover.append(SizepcGMC_galo) ; sigmavGMCover.append(sigmavGMC_galo) ; MasscoGMCover.append(MasscoGMC_galo) ; aviriaGMCover.append(aviriaGMC_galo) ; Sigmamoleover.append(Sigmamole_galo)
     TpeakGMCover.append(TpeakGMC_galo)   ; tauffGMCover.append(tauffGMC_galo)
 
+    LumHacorrno.append(lhahiicorr[idhiino]) ; GaldisHIIno.append(rgalhii[idhiino]) ; SizepcHIIno.append(sizehii[idhiino]) ; sigmavHIIno.append(sigmahii[idhiino])
+    SizepcGMCno.append(radgmc[idgmcno]) ;  sigmavGMCno.append(sigvgmc[idgmcno]) ; MasscoGMCno.append(massco[idgmcno]) ; aviriaGMCno.append(avir[idgmcno])
+    Sigmamoleno.append(Sigmamol_co[idgmcno]) ; TpeakGMCno.append(tpgmc[idgmcno]) ; tauffGMCno.append(tauff[idgmcno])
+
+
     RAgmcover.append(RAgmc) ; DECgmcover.append(DECgmc)
     RAhiiover.append(RAhii)  ; DEChiiover.append(DEChii)
 
@@ -345,11 +388,14 @@ for i in range(len(hiicats)):
         file = open("Table1.txt","a")
     if len(LumHacorr_galo)!=0:
         file.write("%s & %i & %i & %i\\%% & %i\\%% & %10.2E & %i\\%% & %10.2E & %i\\%% \\\ \n" % (galnam,len(lhahiicorr), len(fluxco),round(len(LumHacorr_galo)*100.00/len(lhahiicorr)),round(len(LumHacorr_galo)*100/len(fluxco)),LHa_all,round(LHa_galo*100/LHa_all),Lco_all,round(Lco_galo*100/Lco_all)))
+    if len(LumHacorr_galo)==0:
+        file.write("%s & %i & %i & %i\\%% & %i\\%% & %10.2E & %i\\%% & %10.2E & %i\\%% \\\ \n" % (galnam,len(lhahiicorr), len(fluxco),0,0,LHa_all,0,Lco_all,0))
     file.close()
 
     print len(LumHacorr_galo)
     if len(LumHacorr_galo)==0:
-        continue   
+        continue
+
     #==========================================================================================
     ## PLOTS
     #============
@@ -379,7 +425,8 @@ for i in range(len(hiicats)):
     metalhii_cl_n      = outnan(metaliHII_galo)
     vamethii_cl_n      = outnan(varmetHII_galo)
     print "hola1"
-    
+    if galnam=='ic5332':
+        continue   
     arrays = [rgalhii_n,sizehii_n,lhacorrall_n,sigmahii_n,metalhii_n,vamethii_n,dists_n,rad_nodc_noex_n,sigv_kms_n,massco_n,avir_n,Sigmamol_co_n]
     labsname = ['Galactocentric radius [kpc]','HII region size [pc]', r'Luminosity H$\alpha$ [erg/s]',r'$\sigma_{v}$ HII region [km/s]','Metallicity','Variation metallicity','Distance  HII-GMC [pc]','GMC size [pc]',r'$\sigma_v$ [km/s]',r'Mass$_{CO}$ [M$_{\odot}$]',r'$\alpha_{vir}$',r'$\Sigma_{mol}$']
     arraycl=[rgalhii_cl_n,sizehii_cl_n,lhacorrall_cl_n,sigmahii_cl_n,metalhii_cl_n,vamethii_cl_n]
@@ -409,8 +456,7 @@ for i in range(len(hiicats)):
   
     pdf1.savefig(fig)
     plt.close()
-
-    print "hola2"
+    
     # Plot HII parameters vs GMC parameters
     title_font = {'fontname': 'Arial', 'size': '18', 'color': 'black', 'weight': 'normal',
                   'verticalalignment': 'bottom'}
@@ -485,7 +531,7 @@ for j in range(len(galaxias)):
         ratlin[j] = LumHacorrover[j]
 
 #==================================================================================
-# Saving the parameters to be read by anither procedure.
+# Saving the parameters to be read by another procedure.
 
 print "Plots of all galaxies together"
 arrayxax = [GaldisHIIover,SizepcHIIover,LumHacorrover,sigmavHIIover,ratlin,metaliHIIover,varmetHIIover]
@@ -494,10 +540,18 @@ labsxax = ['log(Galactocentric radius) [kpc]','log(HII region size) [pc]', r'log
 labsyay = ['log(Dist. HII-GMC) [pc]',r'log(M$_{\rm CO}$) [10$^5$ M$_{\odot}$]','log(GMC size) [pc]',r'log($\Sigma_{\rm mol}$)',r'log($\sigma_{\rm v}$) [km s$^{-1}$]',r'log($\alpha_{vir}$)',r'log(CO $T_{\rm peak}$ [K])',r'log($\tau_{\rm ff}$) [yr]']
 
 print "Saving variables in external file."
-with open(('Galaxies_variables_GMC%s.pickle' % namegmc), "wb") as f:
+with open(('Galaxies_paired_GMC%s.pickle' % namegmc), "wb") as f:
     pickle.dump([galaxias,arrayyay,arrayxax,RAgmcover,DECgmcover,RAhiiover,DEChiiover,labsxax,labsyay],f)
 
 print "Saving variables in external file."
-with open(('Galaxies_variables_notover_GMC%s.pickle' % namegmc), "wb") as f:
+with open(('Galaxies_variables_all_GMC%s.pickle' % namegmc), "wb") as f:
     pickle.dump([GaldisHII,SizepcHII,LumHacorr,sigmavHII,metaliHII,varmetHII,numGMConHII,MasscoGMC],f)
+
+print "Saving variables in external file."
+with open(('Galaxies_variables_notover_GMC%s.pickle' % namegmc), "wb") as f:
+    pickle.dump([LumHacorrno,GaldisHIIno,SizepcHIIno,sigmavHIIno,SizepcGMCno,sigmavGMCno,MasscoGMCno,aviriaGMCno,Sigmamoleno,TpeakGMCno,tauffGMCno],f)
+
+
+
+
 
