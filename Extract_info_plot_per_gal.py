@@ -111,8 +111,14 @@ def writeds9(galnam,namegmc,rahii,dechii,pind,ragmc,decgmc,comment):
     Write list of sources in DS9 format.
 
     """
-    
-    f=open('../ds9tables/%s%s-HIIregions-%s.reg' % (galnam,namegmc,comment) ,"w+")
+    path_tab = '../ds9tables'
+    if not os.path.exists(path_tab):
+        try:
+            os.mkdir(path_tab)
+        except:
+            print ("Creation of the directory %s failed" % path_tab)
+   
+    f = open('%s/%s%s-HIIregions-%s.reg' % (path_tab,galnam,namegmc,comment) ,"w+")
     f.write("# Region file format: DS9 version 4.1\n")
     f.write('global color=green dashlist=8 3 width=1 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=1 move=1 delete=1 include=1 source=1\n')
     f.write("fk5\n")
@@ -120,7 +126,7 @@ def writeds9(galnam,namegmc,rahii,dechii,pind,ragmc,decgmc,comment):
         f.write('circle(%12.8f,%12.8f,1") # text={%i} width=3\n' % (rahii[j], dechii[j],pind[j]))
     f.close()
 
-    f=open('../ds9tables/%s%s-GMCs-%s.reg' % (galnam,namegmc,comment),"w+")
+    f = open('../ds9tables/%s%s-GMCs-%s.reg' % (galnam,namegmc,comment),"w+")
     f.write("# Region file format: DS9 version 4.1\n")
     f.write('global color=green dashlist=8 3 width=1 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=1 move=1 delete=1 include=1 source=1\n')
     f.write("fk5\n")
@@ -128,13 +134,17 @@ def writeds9(galnam,namegmc,rahii,dechii,pind,ragmc,decgmc,comment):
         f.write('circle(%12.8f,%12.8f,1") # text={%i} width=3 color=red\n' % (ragmc[j], decgmc[j],j))
     f.close() 
 
-def outnan(var1):   #Taking out the NaN values
+def outnan(var1):
+    """
+    Taking out the NaN values from the catalogs
+    """
     nonan = var1[~np.isnan(var1)]
     return nonan
 
 
 #===================================================================================
 # Defining paths to the files and files names
+
 dirhii = "../../Catalogs-HIIregions/hii_region_enhanced_catalogs/"
 dirgmc = "../../Catalogs-CPROPS/"
 diralma = '../../ALMA-LP-delivery/delivery_v3p3/'
