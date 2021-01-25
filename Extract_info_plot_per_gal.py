@@ -1,7 +1,7 @@
 #
-# Main script to extract the information of each molecular cloud and HII region
-# We need the molecular cloud and HII region catalogs. 
-# Script also plots the correlation of properties for each galaxy.
+# Main script to extract the information of each molecular cloud (GMC) and HII region
+# Scripts reads the molecular cloud and HII region catalogs, for each GMC the scripts find the closest
+# HII region. A visualisation of the correlation between the properties of the paired GMCs and HII region is done.
 #
 
 
@@ -42,20 +42,27 @@ def checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,distance):
 
     Parameters:
     ----------
-    xgalhii : Position in the galaxy the X axis of the HII region
-    ygalhii : Position in the galaxy the Y axis of the HII region
-    xgalgmc : Position in the galaxy the X axis of the molecular cloud
-    ygalgmc : Position in the galaxy the Y axis of the molecular cloud
-    sizehii : Size of the HII region
-    radgmc : Size of the molecular cloud
+    xgalhii : Position in the galaxy the X axis of the HII region in arcsec
+    ygalhii : Position in the galaxy the Y axis of the HII region in arcsec
+    xgalgmc : Position in the galaxy the X axis of the molecular cloud in arcsec
+    ygalgmc : Position in the galaxy the Y axis of the molecular cloud in arcsec
+    sizehii : Size of the HII region in pc
+    radgmc : Size of the molecular cloud in pc
     distance : Distance of the galaxy in kpc
 
     Returns:
     ---------
-    mindist,inddist,idovergmc,idoverhii,idgmcalone,idhiialone
+    mindist : minimum distance between a GMC and HII region in parsec
+    inddist : index for that minimum distance
+    idovergmc: index for the GMCs
+    idoverhii: index for the HII regions
+    idgmcalone : index for all unpaired GMCs 
+    idhiialone : index for all unpaired HII regions
     
     """
+
     dists  = np.zeros((2,len(xgalgmc)))
+    # For each GMC we look for the closes HII region
     for j in range(len(xgalgmc)):
         distas = ((xgalgmc[j]-xgalhii)**2 + (ygalgmc[j]-ygalhii)**2)**0.5
         dist = np.radians(distas/3600)*distance*1e6  #distance between the GMC and all HII regions in pc
@@ -69,7 +76,7 @@ def checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,distance):
 
     # Removing HIIR that are doubled, i.e. the same HIIR paired with more than 1 GMC.
     for idint, it in enumerate(inddist):  #  a for loop in all gmcs, reading the index of the HIIR
-        indw = np.where(inddist == it)[0]  #### Looking for the same index of HIIR, it, in the entire saved index.
+        indw = np.where(inddist == it)[0]  # Looking for the same index of HIIR, "it", in the entire saved index.
         # If the same GMC has being paired twice, we should have several indices in indw
         if len(indw) > 1:
             igmc = np.extract(inddist == it,indall)  # extract the index of the gmcs associated to the same HIIR, igmc.
@@ -81,11 +88,11 @@ def checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,distance):
                 distmin.append(dmin)
                 idgmc.append(indgmc)
         else:
-            idhii.append(int(it)) #indice del HIIRegion
+            idhii.append(int(it)) #index of the HIIRegion
             distmin.append(np.extract(inddist == it,mindist))
             idgmc.append(idint)
 
-    #@ Index  idhii idgmc
+    # Index  idhii idgmc
     addsize = (sizehii[idhii] + radgmc[idgmc])#*4#/3.
     #tmpoverid = np.argwhere(dists[1,idgmc] < (sizehii[idhii]*2)) # HII with GMCs < 2 sizeHII type: List[int]
     tmpoverid = np.argwhere(mindist[idgmc] < addsize)
