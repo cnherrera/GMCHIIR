@@ -196,9 +196,19 @@ RAhiiover = [] ; DEChiiover = []
 RAgmcall = [] ; DECgmcall = []
 RAhiiall = [] ; DEChiiall = []
 #==========================================================================
-# Limits in the properties of HIIR and GMCs
-#this file is a product if this script! (if the script runs for the first time, comment the following line).
-xlim,ylim,xx,yy=pickle.load(open('limits_properties.pickle',"rb"))
+# Limits in the properties of HIIR and GMCs, prepared by get_limits.py script.
+# this file is a product if this script!
+
+limpick = 'limits_properties.pickle'
+if os.path.exists(limpick):
+    try:
+        xlim,ylim,xx,yy=pickle.load(open(limpick,"rb"))
+    except:
+        print ("File %s could not be opened. Remove the file and create a dummy one" % limpick)
+else:
+    # define Limits for the plots (to have common axis for all plots)
+    xlim = [[-0.5,1.5],[1,4,2.2],[36,40],[1.74,1.90],[33.35.5],[8.3,8.8],[-0.1,0.1]]
+    ylim = [[1.25,2.25],[1,3],[2.0,2.4],[1.5,3.0],[0.5,1.5],[-0.5,0.5],[-0.5,0.7],[0.25,1.5]]
 
 #=============================================================================================================
 # Loop in all galaxies. Do histograms and individual galaxy plots.
