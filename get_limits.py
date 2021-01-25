@@ -1,14 +1,21 @@
+#
+# Scripts to measure the limits for all variables
+# in order to plot all correlations with the same scale.
+#
+
 import numpy as np
 import pickle
 
 def outinf(v1):
+    """
+    Function to take out all values that are Inf.
+    """
     v1n = np.array(v1)
     v1n2 = v1n[np.isfinite(v1n)]
     return v1n2
 
 
 #-------------------------------------------------------------------------------------------------------------
-#-=============================================================
 dirhii = "../../Catalogs-HIIregions/hii_region_enhanced_catalogs/"
 dirgmc = "../../Catalogs-CPROPS/"
 diralma = '../../ALMA-LP-delivery/delivery_v3p3/'
@@ -65,5 +72,4 @@ for k in range(len(labsyay)):
     
 print ("Saving variables in external file: limits_properties.pickle")
 with open('limits_properties.pickle', "wb") as f:
-#        pickle.dump([xlim,ylim,labsxax,labsyay], f)
         pickle.dump([xlimt,ylimt,labsxax,labsyay], f)

@@ -1,3 +1,8 @@
+#
+# Plot correlations between properties of paired GMC and HII regions.
+# Measure linear regression between properties.
+#
+
 import sys
 import numpy as np
 import math
@@ -9,32 +14,37 @@ from matplotlib import cm
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from sklearn.linear_model import LinearRegression
 import seaborn as sns
+from typing import List
 
 np.set_printoptions(threshold=sys.maxsize)
 sns.set(style="white", color_codes=True)
-#===================================================================================
-from typing import List
 
+#===================================================================================
 
 def checknaninf(v1,v2,lim1,lim2):
+    """
+    From 2 arrays, take out values that are Inf in either 2 lists.
+    """
     v1n = np.array(v1)
     v2n = np.array(v2)
     indok = np.where((np.absolute(v1n) < lim1) & (np.absolute(v2n) < lim2))[0].tolist()
-    #print indok
     nv1n = v1n[indok].tolist()
     nv2n = v2n[indok].tolist()
     return nv1n,nv2n
 
 def bindata(xaxall,yayall,mybin):
-   xran	= np.amax(xaxall)-np.amin(xaxall)
-   xspa	= xran/mybin
-   xsta	= np.amin(xaxall)+xspa/2
-   xfin	= np.amax(xaxall)-xspa/2
-   xbinned = np.linspace(xsta,xfin, mybin)
-   ybinned = []
-   eybinned = []
-   nybinned = []
-   for t in range(mybin):
+    """
+    Bin X-Y data 
+    """
+    xran	= np.amax(xaxall)-np.amin(xaxall)
+    xspa	= xran/mybin
+    xsta	= np.amin(xaxall)+xspa/2
+    xfin	= np.amax(xaxall)-xspa/2
+    xbinned = np.linspace(xsta,xfin, mybin)
+    ybinned = []
+    eybinned = []
+    nybinned = []
+    for t in range(mybin):
        idxs = np.where(abs(xaxall-xbinned[t])<xspa/2)
        yayin = yayall[idxs]
        nyayin = len(yayin)
@@ -43,7 +53,7 @@ def bindata(xaxall,yayall,mybin):
        ybinned.append(myayin)
        eybinned.append(syayin)
        nybinned.append(nyayin)
-   return xbinned,ybinned,eybinned,nybinned
+    return xbinned,ybinned,eybinned,nybinned
 
 
 #-=============================================================
@@ -71,9 +81,6 @@ xlim,ylim,xx,yy=pickle.load(open('limits_properties.pickle',"rb"))
 
 #===============================================================
 # Plots of correlations with dots for each pair
-
-pdf3 = fpdf.PdfPages("Correlations_allgals_GMC%s.pdf" % namegmc)  # type: PdfPages
-
 print "Plots of all galaxies together"
 
 df = sns.load_dataset('iris')
