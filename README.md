@@ -1,3 +1,5 @@
 # GMCHIIR
-Repository for the paper: Statistical properties of the molecular gas around 
-HII regions in nearby galaxies
+
+Scripts for the statistical analysis of the molecular gas around HII regions in nearby galaxies.
+
+** - **
