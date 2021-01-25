@@ -211,7 +211,8 @@ else:
     ylim = [[1.25,2.25],[1,3],[2.0,2.4],[1.5,3.0],[0.5,1.5],[-0.5,0.5],[-0.5,0.7],[0.25,1.5]]
 
 #=============================================================================================================
-# Loop in all galaxies. Do histograms and individual galaxy plots.
+
+# Loop all galaxies. Do histograms and individual galaxy plots.
 print "Starting loop in all galaxies [i], do histograms and individual galaxy plots"
 for i in range(len(hiicats)):
 
@@ -238,7 +239,7 @@ for i in range(len(hiicats)):
     rahii  = thii['RA'][idfl] ; dechii = thii['DEC'][idfl]
     pind = thii['PHANGS_INDEX'][idfl]
 
-    #lhahiicorr = thii['LHA']*10.**(0.4*np.interp(6563, [5530,6700],[1.,0.74])*3.1*thii['EBV']) # Correcting
+    #lhahiicorr = thii['LHA']*10.**(0.4*np.interp(6563, [5530,6700],[1.,0.74])*3.1*thii['EBV']) # Correcting the Ha luminosity
     #lhahiicorr = thii['CLHA']  # erg/s
     #elhahiicorr = thii['CLHA_ERR'] # Error in Lhalpha extinction corrected
     sigmahii = thii['HA_SIG'][idfl] 
@@ -249,14 +250,10 @@ for i in range(len(hiicats)):
     #=============================================================
     # Corresponding CO data and GMC catalog
     #--------------------------------------------
-    #data = fits.getdata(("%s%s_co21_v1p0_props.fits" % (dirgmc,galnam)), 1)
-    #tgmc = Table.read(("%s%s_co21_v1p0_props.fits" % (dirgmc,galnam)))
     print "Reading table"
     tgmc = Table.read(("%s%s%s.fits" % (dirgmc,galnam,namegmc)))
 
     dist_gal_Mpc = tgmc['DISTANCE_PC'][0]/1e6
-    print dist_gal_Mpc
-    print tgmc['BEAMFWHM_PC'][0]
     
     s2n = tgmc['S2N']
     ids2n = (np.where(s2n > 0)[0]).tolist()
@@ -297,7 +294,7 @@ for i in range(len(hiicats)):
     wds9 = writeds9(galnam,namegmc,rahii,dechii,pind,ragmc,decgmc,"all_regions")
 
     #==========================================================================================
-    # Galac tic distance in HII regions and GMCs
+    # Galactic distance in HII regions and GMCs
 
     # HII
     center_pos = SkyCoord(racen, deccen, unit=(u.deg, u.deg), frame='fk5')
@@ -357,7 +354,7 @@ for i in range(len(hiicats)):
     mindist,inddist,idovergmc,idoverhii,idgmcno,idhiino=checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,dist_gal_Mpc)
 
     # For each HII region, I get the number and index of GMCs that are at a distance < 2*size
-    #and save variables with all data becaus of the index.
+    #and save variables with all data because of the index.
     numgmcs = [np.zeros(len(xgalhii)),[None]*len(xgalhii)]
     for j in range(len(xgalhii)):
         dstas = ((xgalgmc-xgalhii[j])**2 + (ygalgmc-ygalhii[j])**2)**0.5
