@@ -92,7 +92,6 @@ def checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,distance):
             distmin.append(np.extract(inddist == it,mindist))
             idgmc.append(idint)
 
-    # Index  idhii idgmc
     addsize = (sizehii[idhii] + radgmc[idgmc])#*4#/3.
     #tmpoverid = np.argwhere(dists[1,idgmc] < (sizehii[idhii]*2)) # HII with GMCs < 2 sizeHII type: List[int]
     tmpoverid = np.argwhere(mindist[idgmc] < addsize)
@@ -106,8 +105,12 @@ def checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,distance):
     return mindist,inddist,idovergmc,idoverhii,idgmcalone,idhiialone
     
 
-# Write a list of sources into DS9 format
+
 def writeds9(galnam,namegmc,rahii,dechii,pind,ragmc,decgmc,comment):
+    """
+    Write list of sources in DS9 format.
+
+    """
     
     f=open('../ds9tables/%s%s-HIIregions-%s.reg' % (galnam,namegmc,comment) ,"w+")
     f.write("# Region file format: DS9 version 4.1\n")
