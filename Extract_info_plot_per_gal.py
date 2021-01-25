@@ -1,3 +1,10 @@
+#
+# Main script to extract the information of each molecular cloud and HII region
+# We need the molecular cloud and HII region catalogs. 
+# Script also plots the correlation of properties for each galaxy.
+#
+
+
 import os 
 import math
 import sys
@@ -20,16 +27,34 @@ import matplotlib.backends.backend_pdf as fpdf
 
 from sklearn.linear_model import LinearRegression
 import seaborn as sns
+from typing import List
 
 import pdb
 
 np.set_printoptions(threshold=sys.maxsize)
 sns.set(style="white", color_codes=True)
-#===================================================================================
-from typing import List
 
-# To measure the distance between the GMCs and HII regions.
+#===================================================================================
+
 def checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,distance):
+    """
+    Measure the distance between the GMCs and HII regions
+
+    Parameters:
+    ----------
+    xgalhii : Position in the galaxy the X axis of the HII region
+    ygalhii : Position in the galaxy the Y axis of the HII region
+    xgalgmc : Position in the galaxy the X axis of the molecular cloud
+    ygalgmc : Position in the galaxy the Y axis of the molecular cloud
+    sizehii : Size of the HII region
+    radgmc : Size of the molecular cloud
+    distance : Distance of the galaxy in kpc
+
+    Returns:
+    ---------
+    mindist,inddist,idovergmc,idoverhii,idgmcalone,idhiialone
+    
+    """
     dists  = np.zeros((2,len(xgalgmc)))
     for j in range(len(xgalgmc)):
         distas = ((xgalgmc[j]-xgalhii)**2 + (ygalgmc[j]-ygalhii)**2)**0.5
@@ -71,8 +96,6 @@ def checkdist(xgalhii,ygalhii,xgalgmc,ygalgmc,sizehii,radgmc,distance):
     allhii = np.arange(len(sizehii))
     idgmcalone = np.delete(allgmc,idovergmc).tolist()
     idhiialone = np.delete(allhii,idoverhii).tolist()
-    print len(idovergmc),len(idgmcalone),len(radgmc)
-    print len(idoverhii),len(idhiialone),len(sizehii)
     return mindist,inddist,idovergmc,idoverhii,idgmcalone,idhiialone
     
 
