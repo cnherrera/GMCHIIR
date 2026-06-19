@@ -1,0 +1,38 @@
+# GMCHIIR — requirements
+# ======================
+# These scripts were originally written for Python 2.7 (circa 2019-2020).
+# Two requirement files are provided below as comments:
+#   - Section A: the original Python 2.7 environment (for reference/reproducibility)
+#   - Section B: a modern Python 3 equivalent (if porting the code)
+#
+# ⚠️  Python 2.7 is end-of-life. pip no longer resolves Py2-compatible
+#     versions by default. The Py2 versions below are for documentation
+#     purposes. To recreate the original environment use conda (see below).
+#
+# ------------------------------------------------------------------------------
+# A) Original Python 2.7 environment (approximate versions used at the time)
+# ------------------------------------------------------------------------------
+# numpy==1.16
+# scipy==1.2
+# astropy==3.2
+# matplotlib==2.2
+# seaborn==0.9
+# scikit-learn==0.20
+#
+# To recreate with conda:
+#   conda create -n gmchiir_py2 python=2.7 \
+#       numpy=1.16 scipy=1.2 astropy=3.2 \
+#       matplotlib=2.2 seaborn=0.9 scikit-learn=0.20
+#   conda activate gmchiir_py2
+#
+# ------------------------------------------------------------------------------
+# B) Modern Python 3 equivalent (requires porting the scripts to Python 3 first)
+#    Install with:  pip install -r requirements.txt
+# ------------------------------------------------------------------------------
+
+numpy>=1.21
+scipy>=1.7          # only needed for matching.py (cKDTree)
+astropy>=5.0        # Table, SkyCoord, units, constants
+matplotlib>=3.5
+seaborn>=0.11
+scikit-learn>=1.0   # LinearRegression for correlation plots
